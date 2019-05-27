@@ -1,6 +1,6 @@
 # ECO/RESOLVE Mocks
 
-This Repository contains tools to build mock galaxy catalogs for the LEGA-C [survey](http://www.mpia.de/home/legac/) within the COSMOS field.
+This repository contains tools to build mock galaxy catalogs for the LEGA-C [survey](http://www.mpia.de/home/legac/) within the COSMOS field.
 
 ## Dependancies
 In order to run the code in this repository, you will need the following packages in your Python path:
