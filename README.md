@@ -1,4 +1,4 @@
-# ECO/RESOLVE Mocks
+# LEGA-C Mocks
 
 This repository contains tools to build mock galaxy catalogs for the LEGA-C [survey](http://www.mpia.de/home/legac/) within the COSMOS field.
 
