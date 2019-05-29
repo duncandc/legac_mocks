@@ -7,7 +7,7 @@ from __future__ import (division, print_function, absolute_import,
 import numpy as np
 from astropy.table import Table
 from legac_mocks.utils import nearest_nieghbors_1d
-from legac_mocks.legac_galaxy_properties import legac_table as default_data
+from legac_mocks.cosmos_galaxy_properties import cosmos_table as default_data
 
 
 class prim_prop_nn(object):

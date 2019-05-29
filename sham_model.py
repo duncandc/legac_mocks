@@ -159,7 +159,7 @@ class CAMGalProp(object):
                  prim_galprop,
                  prim_galprop_bins,
                  secondary_galprop='ssfr',
-                 secondary_haloprop='halo_half_mass_scale',
+                 secondary_haloprop='halo_halfmass_scale_factor',
                  rho=1.0,
                  conditional_rvs=None,
                  **kwargs):
@@ -273,7 +273,7 @@ class HaloProps(object):
     class to carry over halo properties to galaxy mock
     """
     def __init__(self,
-                 haloprop_keys=['halo_mpeak', 'halo_vpeak', 'halo_half_mass_scale', 'halo_acc_rate_100myr'],
+                 haloprop_keys=['halo_mpeak', 'halo_vpeak', 'halo_halfmass_scale_factor'],
                  **kwargs):
         """
         Parameters
