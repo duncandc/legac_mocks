@@ -1,96 +1,56 @@
 """
-define galaxy properties and build PDF for ECO survey
+define galaxy properties for COSMOS survey
 """
 
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import numpy as np
 import os
-#from gaussian_kde.gaussian_kde import gaussian_kde
 from astropy.io import ascii
 from scipy.stats import norm
-from astropy.table import Table
+from astropy.table import Table, hstack
 
 # load ECO data
 data_path = os.path.dirname(os.path.realpath(__file__))+'/data/'
-data = ascii.read(data_path + "eco_data.csv")
+
+littleh = 0.7
+
+# load catalog 1
+fname = 'COSMOS2015_UVista_cat_withzCOSMOS_withChandra.fits'
+data1 = Table.read(data_path + fname)
+
+# load catalog 2
+fname = 'COSMOS_0.5_2.5_cosmos2015_masses_toDuncan.fits'
+data2 = Table.read(data_path + fname)
+
+# combine catalogs
+from halotools.utils import crossmatch
+id1, id2 = crossmatch(data1['NUMBER'], data2['ID'])
+
+data = hstack([data1[id1], data2[id2]])
+    
+# convert to h=1 scalings
+data['MASS_SC'] = (10**data['MASS_SC'])*littleh**2
+data['LGSFR_SC'] = (10**data['LGSFR_SC'])*littleh**2
 
 # trim data
-mask = (data['LOGMSTAR'] > 0.0)
-data = data[mask]
+z_mask =(data['PHOTOZ']>0.75) & (data['PHOTOZ']<1.0)
+mstar_mask = (data['MASS_SC'] > 10**9.4)
+chi2_mask = data['CHI2_BEST'] < 2.5
+kmag_mask = data['KMAG'] < 23.4
+type_mask = data['TYPE_2']==0
 
-# add random noise to stellar mass 
-N = len(data)
-f = np.random.normal(1, 0.1, N)
+selection_mask = z_mask & mstar_mask & chi2_mask & kmag_mask & type_mask 
+
+data = data[selection_mask]
 
 # process values
-h = 0.7
-mstar = f*(10.0**data['LOGMSTAR'])*h**2  # stellar mass
-mgas = (10.0**data['LOGMGAS'])*h**2  # gas mass
-mbary = mgas + mstar  # baryonic mass
-fsmgr = np.log10(data['MEANFSMGR'])  # fractional stellar mass growth rate
-abs_rmag = data['ABSRMAG']  # absolute r-band magnitude
-b_to_a = data['B_A']  # axis ratios
-dgr = data['DGR']  # (g-r) color gradient
-morph_type = data['MORPHEL']  # quantitative morphological type
-u_minus_r = data['MODELU_RCORR']  # (u-r) color
-g_minus_r = data['MODELG_RCORR']  # (g-r) color
+mstar = (10**(data['MASS_SC'])*littleh**2  # stellar mass
+ssfr = (10**data['LGSFR_SC'])*littleh**2
 
-# add some derived quantities
-abs_umag = u_minus_r + abs_rmag  # absolute u-band magnitude
-abs_gmag = g_minus_r + abs_rmag  # absolute g-band magnitude
-fgas = mgas/(mbary)  # gas fraction
+cosmos_values = np.vstack([mstar, ssfr]).T
+cosmos_names = ['stellar_mass', 'ssfr']
 
-# create b_to_a variable with better properties
-bijected_b_to_a = np.log(b_to_a/(1.0-b_to_a))
-# replace b_to_a==0 with a small value
-mask = (b_to_a == 0.0)
-min_b_to_a = np.min(b_to_a[~mask])
-bijected_b_to_a[mask] = np.log(min_b_to_a/(1.0-min_b_to_a))
-
-# create fgas variable with better properties
-bijected_fgas = np.log(fgas/(1.0-fgas))
-
-# convert morphological type to numerical value
-# L=0, E=1, NA=-1
-num_morph_type = np.zeros(len(data))
-mask = (morph_type == 'E')
-num_morph_type[mask] = 1
-mask = (morph_type == 'NA')
-num_morph_type[mask] = -1
-
-# trim dgr dist
-mask = np.array((dgr > -1) & (dgr < 1))
-params = norm.fit(dgr[mask])
-model = norm(loc=params[0], scale=params[1])
-dgr[~mask] = model.rvs(size=np.sum(~mask))
-
-eco_values = np.vstack([mstar, mgas, mbary,
-                       abs_rmag, abs_umag, abs_gmag,
-                       u_minus_r, g_minus_r, fsmgr, fgas, bijected_fgas,
-                       b_to_a, bijected_b_to_a,
-                       num_morph_type, dgr]).T
-eco_names = ['stellar_mass', 'gas_mass', 'baryonic_mass',
-             'abs_rmag', 'abs_umag', 'abs_gmag',
-             'u_minus_r', 'g_minus_r', 'fsmgr', 'fgas', 'bijected_fgas',
-             'b_to_a', 'bijected_b_to_a',
-             'num_morph_type', 'dgr']
-
-eco_table = Table(eco_values, names=eco_names)
-
-"""
-# build KDE model for galaxy property PDF
-eco_kernel = gaussian_kde(eco_values)
-
-# build KDE 2D kernels
-values = np.vstack([mstar, fsmgr])
-mstar_fsmgr_kernel = gaussian_kde(values)
-
-
-def rvs_fsmgr_mstar(x):
-    x = np.log10(x)
-    result = mstar_fsmgr_kernel.conditional_sample(x, [True, False])
-    return result.flatten()
-"""
+cosmos_table = Table(cosmos_values, names=cosmos_names)
 
 
